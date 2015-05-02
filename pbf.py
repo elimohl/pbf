@@ -63,6 +63,8 @@ def parse(root, source):
             root.childrens.append(node)
             parse(node, source)
         elif ch == ']':
+            if root.name == 'root':
+                raise BFException('syntax', 'Missing "[".')
             return
 
 
