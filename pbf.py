@@ -2,13 +2,13 @@ import sys
 import os
 
 
-if len(sys.argv) < 2:
-    sys.exit('Usage: %s file name' % sys.argv[0])
+class BFException(Exception):
+    def __init__(self, error_name, explanation):
+        self.error_name = error_name
+        self.explanation = explanation
 
-if not os.path.exists(sys.argv[1]):
-    sys.exit('ERROR: File  %s was not found!' % sys.argv[1])
-
-source_file = open(sys.argv[1], 'r')
+    def __str__(self):
+        return 'Brainfuck {} error: {}'.format(self.error_name, self.explanation)
 
 
 class Node:
@@ -27,7 +27,7 @@ class Node:
         elif self.name == '<':
             tree.cell_num -= 1
             if tree.cell_num < 0:
-                raise Exception('EXECUTION ERROR: Trying to move pointer out of boundary.')
+                raise BFException('execution', 'Trying to move pointer out of boundary.')
         elif self.name == '+':
             cells[tree.cell_num] = (cells[tree.cell_num] + 1) % 256
         elif self.name == '-':
@@ -48,12 +48,12 @@ class Tree:
         self.cell_num = 0
 
 
-def parse(root):
+def parse(root, source):
     while True:
-        ch = source_file.read(1)
+        ch = source.read(1)
         if not ch:
             if root.name != 'root':
-                raise Exception('SYNTAX ERROR: Missing "]".')
+                raise BFException('syntax', 'Missing "]".')
             return
         elif ch in ['>', '<', '+', '-', '.', ',']:
             node = Node(ch)
@@ -61,17 +61,26 @@ def parse(root):
         if ch == '[':
             node = Node('[]')
             root.childrens.append(node)
-            parse(node)
+            parse(node, source)
         elif ch == ']':
             return
 
 
-try:
-    root = Node('root')
-    tree = Tree(root)
-    parse(root)
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        sys.exit('Usage: %s file name' % sys.argv[0])
 
-    cells = [0]
-    root.execute(cells, tree)
-except Exception as e:
-    print e
+    if not os.path.exists(sys.argv[1]):
+        sys.exit('ERROR: File  %s was not found!' % sys.argv[1])
+
+    source_file = open(sys.argv[1], 'r')
+
+    try:
+        root = Node('root')
+        tree = Tree(root)
+        parse(root, source_file)
+
+        cells = [0]
+        root.execute(cells, tree)
+    except BFException as e:
+        print e
